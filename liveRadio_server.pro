@@ -1,4 +1,4 @@
-QT       += core gui
+QT       += core gui network multimedia sql
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -16,11 +16,22 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    DBHelper.cpp \
+    clientsocket.cpp \
     main.cpp \
-    mainwindow.cpp
+    mainwindow.cpp \
+    socketmanager.cpp \
+    userdao.cpp \
+    userdaoimp.cpp
 
 HEADERS += \
-    mainwindow.h
+    DBHelper.h \
+    clientsocket.h \
+    mainwindow.h \
+    socketmanager.h \
+    user.h \
+    userdao.h \
+    userdaoimp.h
 
 FORMS += \
     mainwindow.ui
