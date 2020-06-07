@@ -42,8 +42,8 @@ void MainWindow::onNewConnection()
     connect(client, SIGNAL(disconnected()), th, SLOT(quit()));
 
     qRegisterMetaType<user_t>("user_t");    //完成结构体注册
-
-    connect(cs, SIGNAL(sigWrite(QTcpSocket*, user_t, int)), this, SLOT(onSigWrite(QTcpSocket*, user_t, int)));
+    connect(cs, SIGNAL(sigMes(QString)), this, SLOT(onSigMes(QString)));
+    connect(cs, SIGNAL(sigWrite(QTcpSocket*, user_t, int)), this, SLOT(onSigWrite(QTcpSocket*, user_t, int)));//向客户端发送数据包
     cs->moveToThread(th);   //移动到子线程运行任务
     th->start();    //启动线程
 
@@ -55,5 +55,11 @@ void MainWindow::onNewConnection()
 void MainWindow::onSigWrite(QTcpSocket *socket, user_t user, int len)
 {
     socket->write((char*)&user, len);
+    qDebug() << __FILE__ << __FUNCTION__ << __LINE__;
+}
+
+void MainWindow::onSigMes(QString mes)
+{
+    ui->textBrowser->append(mes);
 }
 

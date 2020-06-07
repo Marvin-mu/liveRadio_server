@@ -20,6 +20,7 @@ SOURCES += \
     clientsocket.cpp \
     main.cpp \
     mainwindow.cpp \
+    roommanager.cpp \
     socketmanager.cpp \
     userdao.cpp \
     userdaoimp.cpp
@@ -28,6 +29,7 @@ HEADERS += \
     DBHelper.h \
     clientsocket.h \
     mainwindow.h \
+    roommanager.h \
     socketmanager.h \
     user.h \
     userdao.h \

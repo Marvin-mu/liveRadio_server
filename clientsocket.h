@@ -20,17 +20,22 @@ public:
     void serverExit(user_t user);      //退出
     void serverRoomName(user_t user);  //客户端请求开房
     void serverRoomList(user_t user);  //客户端请求房间列表
+    void serverJoinRoom(user_t);        //房间新听众
+    void serverQuit(user_t user);       //关闭直播间请求
     void serverChatText(user_t user);  //客户端请求文字聊天
 
     QTcpSocket* getSocket()const;
+    user_t getUser()const;
 
 private:
     QTcpSocket *socket;
+    user_t myinfo;
     static QMutex mutex1;               //保证线程安全的互斥锁
     static QMutex mutex2;
 
 signals:
     void sigWrite(QTcpSocket *socket, user_t user, int len);
+    void sigMes(QString);              //线程信息通讯
 
 private slots:
     void onReadyRead();

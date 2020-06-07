@@ -51,7 +51,7 @@ user_t UserDaoImp::findUser(const QString &name)
         QString username = query.value(0).toString();
         QString userpasswd = query.value(1).toString();
         int flag = query.value(2).toInt();
-        qDebug() << name << " " << username << " " << userpasswd << " " << flag;
+        //qDebug() << name << " " << username << " " << userpasswd << " " << flag;  //用于调试
         if (name == username) {
             char *pname = username.toLocal8Bit().data();
             strncpy(user.username, pname, 20);    //账户信息拷贝
