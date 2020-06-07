@@ -26,6 +26,13 @@ user_t ClientSocket::getUser() const
     return myinfo;
 }
 
+void ClientSocket::setUser(user_t user)
+{
+    myinfo.flag = user.flag;
+    strcpy(myinfo.roomName, user.roomName);
+    qDebug() << __FILE__ << __FUNCTION__ << __LINE__ << user.flag << user.roomName;
+}
+
 //接收客户端的协议包
 void ClientSocket::onReadyRead()
 {
@@ -92,12 +99,11 @@ void ClientSocket::serverLogin(user_t user)
     QString pname = QString::fromLocal8Bit(user.username);
     mutex1.lock();
     user_t myuser = ud->findUser(pname);
-    //mutex1.unlock();
     if (strncmp(myuser.data, "ok", 2) == 0) {
         strcpy(user.data, "用户不存在");
     } else {
         if (strcmp(myuser.password, user.password) == 0) {
-            if (myuser.flag == UP) {
+            if (myinfo.flag == UP) {
                 strcpy(user.data, "该用户已经在线");
             } else {
                 strcpy(user.data, "登录成功");
@@ -107,6 +113,9 @@ void ClientSocket::serverLogin(user_t user)
         }
     }
     mutex1.unlock();
+    //SocketManager *sm = SocketManager::getInstance();//客户端请求后更新存储的用户信息
+    //sm->updateUser(user);
+    setUser(user);
     emit sigWrite(socket, user,sizeof(user));
     delete ud;
 }
@@ -131,6 +140,7 @@ void ClientSocket::serverExit(user_t user)
     qDebug() << __FILE__ << __FUNCTION__ << __LINE__;
 }
 
+//
 void ClientSocket::serverRoomList(user_t user)
 {
     //房间列表的信息拷贝到user的数据段
@@ -144,7 +154,7 @@ void ClientSocket::serverRoomList(user_t user)
     strcpy(user.data, str.toUtf8().data());
     emit sigWrite(socket, user, sizeof (user_t));
     emit sigMes("request roomlist");
-    qDebug() << __FILE__ << __FUNCTION__ << __LINE__;
+    //qDebug() << __FILE__ << __FUNCTION__ << __LINE__;
 }
 
 void ClientSocket::serverJoinRoom(user_t user)
@@ -152,6 +162,17 @@ void ClientSocket::serverJoinRoom(user_t user)
     QString name = QString::fromLocal8Bit(user.username);
     QString rname = QString::fromLocal8Bit(user.roomName);
     strcpy(myinfo.roomName, rname.toUtf8().data());
+
+    SocketManager *sm = SocketManager::getInstance();//此房间的每个用户都会收到信息，更新他们的房间用户列表
+    QVector<ClientSocket*> sockets = sm->getAllSocket();
+    for (auto &it : sockets) {
+        if (it->getUser().roomName == rname) {
+            QTcpSocket *everysocket = it->getSocket();
+            emit sigWrite(everysocket, user, sizeof (user));
+        }
+    }
+    setUser(user);
+
     emit sigMes(name + " 加入了 " + rname  + " 房间");
 }
 
@@ -166,7 +187,7 @@ void ClientSocket::serverQuit(user_t user)
             emit sigWrite(it->getSocket(), user, sizeof (user_t));
         }
     }
-    emit sigMes(roomname + "quit");
+    emit sigMes(roomname + " quit");
 }
 
 //实现文字聊天

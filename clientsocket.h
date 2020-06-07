@@ -26,6 +26,7 @@ public:
 
     QTcpSocket* getSocket()const;
     user_t getUser()const;
+    void setUser(user_t);
 
 private:
     QTcpSocket *socket;

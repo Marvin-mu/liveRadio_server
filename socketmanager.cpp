@@ -39,3 +39,15 @@ QVector<ClientSocket*> SocketManager::getAllSocket()const
 {
     return sockets;
 }
+/*
+void SocketManager::updateUser(user_t user)
+{
+    QString name = QString::fromLocal8Bit(user.username);
+    for (auto &it : sockets) {
+        if (it->getUser().username == name) {
+            it->setUser(user);
+            break;
+        }
+    }
+}
+*/
