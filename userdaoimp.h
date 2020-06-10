@@ -11,6 +11,7 @@ public:
     UserDaoImp();
     virtual bool addUser(user_t user);              //增加用户,放入数据库
     virtual user_t findUser(const QString &name);   //在数据库中查找是否存在此用户
+    virtual bool updateUser(user_t user);
 };
 
 #endif // USERDAOIMP_H

@@ -13,6 +13,7 @@ public:
     static DBHelper* getInstance();
     void createConn(const QString dbName);      //建立链接
     void destroyConn();     //摧毁链接
+    QSqlDatabase getDb()const;
     ~DBHelper();
 
 private:

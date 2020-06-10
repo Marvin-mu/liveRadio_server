@@ -24,7 +24,7 @@ bool UserDaoImp::addUser(user_t user)
     DBHelper *helper = DBHelper::getInstance();
     helper->createConn(dbName);
     //执行sql语句
-    QSqlQuery query;
+    QSqlQuery query(helper->getDb());
     QString sql = QString("insert into %1 (name,password) values").arg(tbName);
     sql += "('" + qname + "','" + qpasswd + "');";
     if (!query.exec(sql)) {          //sql语句出错,输出出错信息
@@ -44,7 +44,7 @@ user_t UserDaoImp::findUser(const QString &name)
     memset(&user, 0, sizeof(user));
     DBHelper *helper = DBHelper::getInstance();
     helper->createConn(dbName);
-    QSqlQuery query;
+    QSqlQuery query(helper->getDb());
     QString sql = QString("select %1,%2,%3 from %4;").arg("name").arg("password").arg("online").arg(tbName);
     query.exec(sql);    //比对用户的姓名
     while(query.next()){
@@ -64,4 +64,24 @@ user_t UserDaoImp::findUser(const QString &name)
     helper->destroyConn();    //催毁链接
     strcpy(user.data, "ok");       //不存在返回的数据段非空
     return user;
+}
+
+bool UserDaoImp::updateUser(user_t user)
+{
+    DBHelper *helper = DBHelper::getInstance();
+    helper->createConn(dbName);
+    QSqlQuery query(helper->getDb());
+
+    QString name = QString::fromLocal8Bit(user.username);
+    int flag = user.flag;
+    QString sql = QString("update %1 set online=%2 where name='%3';").arg(tbName).arg(flag).arg(name);
+    qDebug() << sql;
+    if (!query.exec(sql)) {
+        QString error = query.lastError().text();
+        qDebug() << "query.exec(sql) " << error;
+        helper->destroyConn();
+        return false;
+    }
+    helper->destroyConn();
+    return true;
 }

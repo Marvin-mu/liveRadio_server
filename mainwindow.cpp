@@ -40,6 +40,7 @@ void MainWindow::onNewConnection()
     QThread *th = new QThread(this);    //创建一个线程
     connect(client, SIGNAL(disconnected()), cs, SLOT(deleteLater()));
     connect(client, SIGNAL(disconnected()), th, SLOT(quit()));
+    //connect(client, SIGNAL(disconnected()), th, SLOT(terminate()));
 
     qRegisterMetaType<user_t>("user_t");    //完成结构体注册
     connect(cs, SIGNAL(sigMes(QString)), this, SLOT(onSigMes(QString)));
@@ -49,13 +50,12 @@ void MainWindow::onNewConnection()
 
     //管理客户端套接字的操作
     SocketManager *sockets = SocketManager::getInstance();
-    sockets->insertSocket(cs);  //新客户端上线
+    sockets->insertSocket(cs);  //新客户端上线，每个客户端有一个线程，被存在容器里
 }
 
 void MainWindow::onSigWrite(QTcpSocket *socket, user_t user, int len)
 {
     socket->write((char*)&user, len);
-    qDebug() << __FILE__ << __FUNCTION__ << __LINE__;
 }
 
 void MainWindow::onSigMes(QString mes)

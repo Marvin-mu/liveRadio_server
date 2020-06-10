@@ -11,9 +11,10 @@ enum type{
     REG,            //注册
     LOGIN,          //登录
     EXIT,           //用户下线
-    ROOMLIST,         //在线直播间
+    ROOMLIST,       //在线直播间
     ROOMNAME,       //创建直播间
     JOINROOM,       //观看直播间
+    QUITROOM,       //退出直播间
     QUIT,           //关闭房间
     TEXT,           //文字聊天
     BS,             //弹幕

@@ -21,12 +21,13 @@ public:
     void serverRoomName(user_t user);  //客户端请求开房
     void serverRoomList(user_t user);  //客户端请求房间列表
     void serverJoinRoom(user_t);        //房间新听众
+    void serverQuitRoom(user_t);
     void serverQuit(user_t user);       //关闭直播间请求
     void serverChatText(user_t user);  //客户端请求文字聊天
+    void serverBs(user_t user);         //处理弹幕
 
     QTcpSocket* getSocket()const;
     user_t getUser()const;
-    void setUser(user_t);
 
 private:
     QTcpSocket *socket;
