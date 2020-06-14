@@ -1,6 +1,7 @@
 #include "clientsocket.h"
 #include "socketmanager.h"
 #include "roommanager.h"
+#include "manageripport.h"
 
 QMutex ClientSocket::mutex1;
 QMutex ClientSocket::mutex2;
@@ -64,6 +65,12 @@ void ClientSocket::onReadyRead()
         case BS:
             serverBs(user);
             break;
+        case IP:
+            serverIp(user);
+            break;
+        case TOP_UP:
+            serverTopUp(user);
+            break;
         default:
             break;
         }
@@ -76,7 +83,6 @@ void ClientSocket::serverReg(user_t user)
     QString pname = QString::fromLocal8Bit(user.username);
     mutex1.lock();
     user_t myuser = ud->findUser(pname);
-    //mutex1.unlock();
     if (strncmp(myuser.data, "ok", 2) != 0) {
         strcpy(user.data, "用户名已存在");
     } else {
@@ -108,12 +114,17 @@ void ClientSocket::serverLogin(user_t user)
     } else {
         if (strcmp(myuser.password, user.password) == 0) {
             if (myuser.flag == UP) {
-                strcpy(user.data, "该用户已经在线");
+                strcpy(user.data, "此用户已在线");
                 str = "用户已在线";
             } else {
+                strcpy(user.vip, myuser.vip);
+                user.money = myuser.money;
                 strcpy(user.data, "登录成功");
+                strcpy(user.portrait, myuser.portrait);//拷贝头像数据
                 str = " success";
-                ud->updateUser(myinfo);
+                mutex2.lock();
+                ud->updateUser(user);
+                mutex2.unlock();
                 myinfo = user;
             }
         } else {
@@ -121,7 +132,9 @@ void ClientSocket::serverLogin(user_t user)
         }
     }
     qDebug() << __FILE__ << __FUNCTION__ << __LINE__;
-    qDebug() << "name:" << myinfo.username << "password:" << myinfo.password << "flag:" << myinfo.flag << "rname:" << myinfo.roomName;
+    qDebug() << "name:" << user.username
+             << "flag:" << user.flag << "rname:" << user.roomName
+             << "money:" << user.money;
     emit sigWrite(socket, user,sizeof(user));
     emit sigMes(pname + " try login, " + str);
     delete ud;
@@ -132,6 +145,8 @@ void ClientSocket::serverRoomName(user_t user)
     QString roomname = QString::fromLocal8Bit(user.roomName);
     RoomManager *rm = RoomManager::getInstance();
     rm->insertRoom(roomname);
+    ManagerIpPort *mi = ManagerIpPort::getInsatnce();//创建组播ip
+    mi->create(roomname);
     //更新所处的房间
     strcpy(myinfo.roomName,roomname.toLocal8Bit());
     qDebug() << __FILE__ << __FUNCTION__ << __LINE__;
@@ -145,7 +160,6 @@ void ClientSocket::serverRoomName(user_t user)
     foreach (ClientSocket* it,sockets) {
         emit sigWrite(it->getSocket(), user, sizeof (user_t));//给每个客户端发信息，更新房间列表
     }
-    //emit sigWrite(socket, user, sizeof (user));
 }
 
 //用户下线从容器里清除信息
@@ -158,7 +172,9 @@ void ClientSocket::serverExit(user_t user)
 
     UserDao *ud = new UserDaoImp;
     user.flag = DOWN;
+    mutex2.lock();
     ud->updateUser(user);
+    mutex2.unlock();
     delete ud;
 
     emit sigMes(pname + " exit");
@@ -173,15 +189,20 @@ void ClientSocket::serverRoomList(user_t user)
 
     strcpy(user.data,QString("start").toLocal8Bit().data());//开始发送房间
     emit sigWrite(socket,user,sizeof (user));
+    UserDao *ud = new UserDaoImp;
 
     for (auto &it : rooms) {
+        mutex2.lock();
+        user_t myuser = ud->findUser(it);
+        mutex2.unlock();
+        strcpy(user.portrait, myuser.portrait);
         strcpy(user.data,it.toLocal8Bit().data());
         emit sigWrite(socket, user, sizeof (user_t));//每个房间发送一次
     }
 
     strcpy(user.data,QString("end").toLocal8Bit().data());//发送结束
     emit sigWrite(socket,user,sizeof (user));
-
+    delete ud;
     emit sigMes(QString::fromLocal8Bit(user.username) + " request roomlist");
 }
 
@@ -190,6 +211,7 @@ void ClientSocket::serverJoinRoom(user_t user)
     QString name = QString::fromLocal8Bit(user.username);
     QString rname = QString::fromLocal8Bit(user.roomName);
     strcpy(myinfo.roomName, rname.toLocal8Bit().data());
+    UserDao *ud = new UserDaoImp;
 
     SocketManager *sm = SocketManager::getInstance();//此房间的每个用户都会收到信息，更新他们的房间用户列表
     QVector<ClientSocket*> sockets = sm->getAllSocket();
@@ -202,6 +224,11 @@ void ClientSocket::serverJoinRoom(user_t user)
             emit sigWrite(everysocket, user, sizeof (user));
 
             user_t temp = it->getUser();
+            mutex2.lock();
+            user_t myuser = ud->findUser(temp.username);
+            mutex2.unlock();
+            strcpy(temp.portrait, myuser.portrait);
+            //
             temp.type = JOINROOM;
             emit sigWrite(socket, temp, sizeof(user_t));//把之前进入房间的用户的信息发给新上线的用户
             emit sigMes("给 " + QString(it->getUser().username) + " 发送了房间成员增加消息");
@@ -211,8 +238,8 @@ void ClientSocket::serverJoinRoom(user_t user)
     strcpy(myinfo.roomName,user.roomName);   //房间名
     qDebug() << __FILE__ << __FUNCTION__ << __LINE__;
     qDebug() << "name:" << myinfo.username << "password:" << myinfo.password << "flag:" << myinfo.flag << "rname:" << myinfo.roomName;
-    //setUser(user,2);
     emit sigMes(name + " 加入了 " + rname  + " 房间");
+    delete ud;
 }
 
 //有用户离开房间
@@ -233,7 +260,7 @@ void ClientSocket::serverQuitRoom(user_t user)
     }
     qDebug() << __FILE__ << __FUNCTION__ << __LINE__;
     qDebug() << "name:" << myinfo.username << "password:" << myinfo.password << "flag:" << myinfo.flag << "rname:" << myinfo.roomName;
-    //setUser(user,2);
+
     emit sigMes(name + " 离开了 " + rname  + " 房间");
 }
 
@@ -269,6 +296,15 @@ void ClientSocket::serverQuit(user_t user)
         emit sigMes(QString::fromLocal8Bit(it->getUser().username) + " request roomlist");
     }
     emit sigMes(roomname + " quit");
+
+    UserDao *ud = new UserDaoImp;
+    mutex2.lock();
+    ud->updateUser(user);
+    mutex2.unlock();
+    delete ud;
+
+    ManagerIpPort *mi = ManagerIpPort::getInsatnce();//销毁组播ip
+    mi->remove(roomname);
 
     strcpy(myinfo.roomName,"");   //房间名置为空
     qDebug() << __FILE__ << __FUNCTION__ << __LINE__;
@@ -307,3 +343,23 @@ void ClientSocket::serverBs(user_t user)
         }
     }
 }
+
+void ClientSocket::serverIp(user_t user)
+{
+    QString roomname = QString::fromLocal8Bit(user.roomName);
+    ManagerIpPort *mi = ManagerIpPort::getInsatnce();//获取组播ip
+    QString ip = "ip/";
+    ip += mi->get(roomname);
+    qDebug() << __FUNCTION__ << " " << QString::fromLocal8Bit(user.username) << " " << ip;
+    strcpy(user.data, ip.toLocal8Bit().data());
+    emit sigWrite(socket, user, sizeof (user));
+}
+
+void ClientSocket::serverTopUp(user_t user)
+{
+    UserDao *ud = new UserDaoImp;
+    ud->topUpUser(user);
+}
+
+
+

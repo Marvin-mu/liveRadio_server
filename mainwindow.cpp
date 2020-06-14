@@ -11,7 +11,8 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    this->setWindowTitle("草莓红播服务器1.0");
+    this->setWindowTitle("草莓红播服务器v3.0");
+    this->setWindowIcon(QIcon(":/image/icon.jpg"));
     //创建套接字管理对象并连接
     server = new QTcpServer(this);
 

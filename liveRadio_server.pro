@@ -20,6 +20,7 @@ SOURCES += \
     clientsocket.cpp \
     main.cpp \
     mainwindow.cpp \
+    manageripport.cpp \
     roommanager.cpp \
     socketmanager.cpp \
     userdao.cpp \
@@ -29,6 +30,7 @@ HEADERS += \
     DBHelper.h \
     clientsocket.h \
     mainwindow.h \
+    manageripport.h \
     roommanager.h \
     socketmanager.h \
     user.h \
@@ -45,3 +47,6 @@ TRANSLATIONS += \
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
+
+RESOURCES += \
+    image.qrc

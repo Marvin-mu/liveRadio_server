@@ -25,6 +25,8 @@ public:
     void serverQuit(user_t user);       //关闭直播间请求
     void serverChatText(user_t user);  //客户端请求文字聊天
     void serverBs(user_t user);         //处理弹幕
+    void serverIp(user_t);//
+    void serverTopUp(user_t);
 
     QTcpSocket* getSocket()const;
     user_t getUser()const;
