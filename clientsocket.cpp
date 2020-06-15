@@ -33,7 +33,7 @@ void ClientSocket::onReadyRead()
 {
     user_t user;
     memset(&user, 0, sizeof(user));
-    while (socket->read((char*)&user,sizeof(user)) > 0) {
+    while (socket->read((char*)&user, sizeof(user)) > 0) {
         switch (user.type) {
         case REG:
             serverReg(user);            //注册
@@ -77,29 +77,36 @@ void ClientSocket::onReadyRead()
     }
 }
 
+//处理注册请求
 void ClientSocket::serverReg(user_t user)
 {
-    UserDao *ud = new UserDaoImp();
+    UserDao *ud = new UserDaoImp;
     QString pname = QString::fromLocal8Bit(user.username);
     mutex1.lock();
     user_t myuser = ud->findUser(pname);
-    if (strncmp(myuser.data, "ok", 2) != 0) {
-        strcpy(user.data, "用户名已存在");
-    } else {
-        //mutex2.lock();  //同一时刻只能一个用户注册
-        if (ud->addUser(user)) {
-            strcpy(user.data, "注册成功");
-        } else {
-            strcpy(user.data, "注册失败");
-        }
-        //mutex2.unlock();
-    }
     mutex1.unlock();
+    QString str;
+    if (strncmp(myuser.data, "ok", 2) != 0) {
+        str = "用户名已存在";
+        strcpy(user.data, "already exist");
+    } else {
+        //同一时刻只能一个用户注册
+        mutex2.lock();
+        if (ud->addUser(user)) {
+            str = "注册成功";
+            strcpy(user.data, "success");
+        } else {
+            str = "注册失败";
+            strcpy(user.data, "failed");
+        }
+        mutex2.unlock();
+    }
     emit sigWrite(socket, user, sizeof(user));
-    emit sigMes(pname + " reg");
+    emit sigMes(pname + " reg," + str);
     delete ud;
 }
 
+//处理注册请求
 void ClientSocket::serverLogin(user_t user)
 {
     UserDao *ud = new UserDaoImp();
@@ -109,17 +116,17 @@ void ClientSocket::serverLogin(user_t user)
     user_t myuser = ud->findUser(pname);
     mutex1.unlock();
     if (strncmp(myuser.data, "ok", 2) == 0) {
-        strcpy(user.data, "用户不存在");
+        strcpy(user.data, "there in no");
         str = "用户不存在";
     } else {
         if (strcmp(myuser.password, user.password) == 0) {
             if (myuser.flag == UP) {
-                strcpy(user.data, "此用户已在线");
+                strcpy(user.data, "online");
                 str = "用户已在线";
             } else {
                 strcpy(user.vip, myuser.vip);
                 user.money = myuser.money;
-                strcpy(user.data, "登录成功");
+                strcpy(user.data, "success");
                 strcpy(user.portrait, myuser.portrait);//拷贝头像数据
                 str = " success";
                 mutex2.lock();
@@ -128,36 +135,40 @@ void ClientSocket::serverLogin(user_t user)
                 myinfo = user;
             }
         } else {
-            strcpy(user.data, "密码错误");
+            strcpy(user.data, "password error");
         }
     }
     qDebug() << __FILE__ << __FUNCTION__ << __LINE__;
     qDebug() << "name:" << user.username
              << "flag:" << user.flag << "rname:" << user.roomName
              << "money:" << user.money;
-    emit sigWrite(socket, user,sizeof(user));
+    emit sigWrite(socket, user, sizeof(user));
     emit sigMes(pname + " try login, " + str);
     delete ud;
 }
 
+//新用户开播
 void ClientSocket::serverRoomName(user_t user)
 {
-    QString roomname = QString::fromLocal8Bit(user.roomName);
+    QString roomname = QString::fromLocal8Bit(user.roomName);//用户名为房间名
     RoomManager *rm = RoomManager::getInstance();
-    rm->insertRoom(roomname);
+    rm->insertRoom(roomname);   //新增房间
     ManagerIpPort *mi = ManagerIpPort::getInsatnce();//创建组播ip
     mi->create(roomname);
     //更新所处的房间
-    strcpy(myinfo.roomName,roomname.toLocal8Bit());
-    qDebug() << __FILE__ << __FUNCTION__ << __LINE__;
-    qDebug() << "name:" << myinfo.username << "password:" << myinfo.password << "flag:" << myinfo.flag << "rname:" << myinfo.roomName;
-
+    strcpy(myinfo.roomName, roomname.toLocal8Bit());
+    qDebug() << __FILE__ << __FUNCTION__ << __LINE__
+    << "name:" << myinfo.username << "password:" << myinfo.password << "flag:" << myinfo.flag << "rname:" << myinfo.roomName;
     emit sigMes(roomname + " roomname");
-
     SocketManager *sm = SocketManager::getInstance();
     QVector<ClientSocket*> sockets = sm->getAllSocket();
     strcpy(user.data, roomname.toLocal8Bit().data());   //房间信息拷贝到数据段
+    UserDao *ud = new UserDaoImp;
     foreach (ClientSocket* it,sockets) {
+        mutex2.lock();
+        user_t myuser = ud->findUser(it->getUser().username);   //查找每个用户的头像,作为房间头像
+        mutex2.unlock();
+        strcpy(user.portrait, myuser.portrait);
         emit sigWrite(it->getSocket(), user, sizeof (user_t));//给每个客户端发信息，更新房间列表
     }
 }
@@ -173,39 +184,36 @@ void ClientSocket::serverExit(user_t user)
     UserDao *ud = new UserDaoImp;
     user.flag = DOWN;
     mutex2.lock();
-    ud->updateUser(user);
+    ud->updateUser(user);//更新数据库的在线状态
     mutex2.unlock();
     delete ud;
-
     emit sigMes(pname + " exit");
 }
 
-//
+//客户端请求房间列表
 void ClientSocket::serverRoomList(user_t user)
 {
     //房间列表的信息拷贝到user的数据段
     RoomManager *rm = RoomManager::getInstance();
     QVector<QString> rooms = rm->getAllRoom();
-
     strcpy(user.data,QString("start").toLocal8Bit().data());//开始发送房间
     emit sigWrite(socket,user,sizeof (user));
     UserDao *ud = new UserDaoImp;
-
     for (auto &it : rooms) {
         mutex2.lock();
-        user_t myuser = ud->findUser(it);
+        user_t myuser = ud->findUser(it);   //查找每个用户的头像
         mutex2.unlock();
         strcpy(user.portrait, myuser.portrait);
         strcpy(user.data,it.toLocal8Bit().data());
-        emit sigWrite(socket, user, sizeof (user_t));//每个房间发送一次
+        emit sigWrite(socket, user, sizeof (user_t));//把每个房间信息发送一次给当前请求的用户
     }
-
     strcpy(user.data,QString("end").toLocal8Bit().data());//发送结束
     emit sigWrite(socket,user,sizeof (user));
     delete ud;
     emit sigMes(QString::fromLocal8Bit(user.username) + " request roomlist");
 }
 
+//用户加入房间
 void ClientSocket::serverJoinRoom(user_t user)
 {
     QString name = QString::fromLocal8Bit(user.username);
@@ -216,28 +224,32 @@ void ClientSocket::serverJoinRoom(user_t user)
     SocketManager *sm = SocketManager::getInstance();//此房间的每个用户都会收到信息，更新他们的房间用户列表
     QVector<ClientSocket*> sockets = sm->getAllSocket();
     for (auto &it : sockets) {
-        if (it->getUser().roomName == rname) {
+        if (it->getUser().roomName == rname) {//如果在这个房间
             QTcpSocket *everysocket = it->getSocket();
             if (it->getUser().username == name) {
                 continue;
             }
-            emit sigWrite(everysocket, user, sizeof (user));
+            mutex2.lock();
+            user_t myuser1 = ud->findUser(name);//查找当前用户的头像
+            mutex2.unlock();
+            strcpy(user.portrait, myuser1.portrait);
+            emit sigWrite(everysocket, user, sizeof (user));//告诉此房间内的每一个用户
 
             user_t temp = it->getUser();
             mutex2.lock();
             user_t myuser = ud->findUser(temp.username);
             mutex2.unlock();
-            strcpy(temp.portrait, myuser.portrait);
+            strcpy(temp.portrait, myuser.portrait);     //其他用户的拷贝头像信息
             //
             temp.type = JOINROOM;
-            emit sigWrite(socket, temp, sizeof(user_t));//把之前进入房间的用户的信息发给新上线的用户
+            emit sigWrite(socket, temp, sizeof(user_t));    //把之前进入房间的用户的信息发给进入房间的用户
             emit sigMes("给 " + QString(it->getUser().username) + " 发送了房间成员增加消息");
         }
     }
 
     strcpy(myinfo.roomName,user.roomName);   //房间名
-    qDebug() << __FILE__ << __FUNCTION__ << __LINE__;
-    qDebug() << "name:" << myinfo.username << "password:" << myinfo.password << "flag:" << myinfo.flag << "rname:" << myinfo.roomName;
+    qDebug() << __FILE__ << __FUNCTION__ << __LINE__
+    << "name:" << myinfo.username << "password:" << myinfo.password << "flag:" << myinfo.flag << "rname:" << myinfo.roomName;
     emit sigMes(name + " 加入了 " + rname  + " 房间");
     delete ud;
 }
@@ -258,8 +270,8 @@ void ClientSocket::serverQuitRoom(user_t user)
             emit sigMes("给 " + QString(it->getUser().username) + " 发送了房间成员退出消息");
         }
     }
-    qDebug() << __FILE__ << __FUNCTION__ << __LINE__;
-    qDebug() << "name:" << myinfo.username << "password:" << myinfo.password << "flag:" << myinfo.flag << "rname:" << myinfo.roomName;
+    qDebug() << __FILE__ << __FUNCTION__ << __LINE__
+    << "name:" << myinfo.username << "password:" << myinfo.password << "flag:" << myinfo.flag << "rname:" << myinfo.roomName;
 
     emit sigMes(name + " 离开了 " + rname  + " 房间");
 }
@@ -276,19 +288,17 @@ void ClientSocket::serverQuit(user_t user)
             emit sigWrite(it->getSocket(), user, sizeof (user_t));
             emit sigMes(QString(it->getUser().username) + " 将会收到关播通知");
         }
-
         RoomManager *rm = RoomManager::getInstance();
         rm->eraseRoom(roomname);    //清除房间信息
-
         //通知每个客户端刷新房间列表
         user_t temp = it->getUser();
         temp.type = ROOMLIST;
         QVector<QString> rooms = rm->getAllRoom();
         strcpy(temp.data,QString("start").toLocal8Bit().data());//开始发送房间
-        emit sigWrite(it->getSocket(),temp,sizeof (user));
+        emit sigWrite(it->getSocket(), temp, sizeof (user));
 
         foreach (QString it1, rooms) {
-            strcpy(temp.data,it1.toLocal8Bit().data());
+            strcpy(temp.data, it1.toLocal8Bit().data());
             emit sigWrite(it->getSocket(), temp, sizeof (user_t));//每个房间发送一次
         }
         strcpy(temp.data,QString("end").toLocal8Bit().data());//发送结束
@@ -307,16 +317,16 @@ void ClientSocket::serverQuit(user_t user)
     mi->remove(roomname);
 
     strcpy(myinfo.roomName,"");   //房间名置为空
-    qDebug() << __FILE__ << __FUNCTION__ << __LINE__;
-    qDebug() << "name:" << myinfo.username << "password:" << myinfo.password << "flag:" << myinfo.flag << "rname:" << myinfo.roomName;
+    qDebug() << __FILE__ << __FUNCTION__ << __LINE__
+    << "name:" << myinfo.username << "password:" << myinfo.password << "flag:" << myinfo.flag << "rname:" << myinfo.roomName;
 }
 
 //实现文字聊天
 void ClientSocket::serverChatText(user_t user)
 {
     QString roomname = QString::fromLocal8Bit(user.roomName);
-    qDebug() << __FUNCTION__ << __LINE__ ;
-    qDebug() << user.data;
+    qDebug() << __FUNCTION__ << __LINE__
+             << user.data;
     SocketManager *sm = SocketManager::getInstance();
     QVector<ClientSocket*> sockets = sm->getAllSocket();
     for (auto &it : sockets) {
@@ -344,6 +354,7 @@ void ClientSocket::serverBs(user_t user)
     }
 }
 
+//分配房间组播ip地址
 void ClientSocket::serverIp(user_t user)
 {
     QString roomname = QString::fromLocal8Bit(user.roomName);
@@ -355,10 +366,14 @@ void ClientSocket::serverIp(user_t user)
     emit sigWrite(socket, user, sizeof (user));
 }
 
+//帐户积分充值
 void ClientSocket::serverTopUp(user_t user)
 {
     UserDao *ud = new UserDaoImp;
+    mutex1.lock();
     ud->topUpUser(user);
+    mutex1.unlock();
+    emit sigMes(QString::fromLocal8Bit(user.username) + "帐户积分 " + QString::number(user.money));
 }
 
 

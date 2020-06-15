@@ -39,9 +39,18 @@ void MainWindow::onNewConnection()
     ClientSocket *cs = new ClientSocket(client);    //创建处理客户端的对象
 
     QThread *th = new QThread(this);    //创建一个线程
-    connect(client, SIGNAL(disconnected()), cs, SLOT(deleteLater()));
-    connect(client, SIGNAL(disconnected()), th, SLOT(quit()));
-    //connect(client, SIGNAL(disconnected()), th, SLOT(terminate()));
+    connect(client, &QTcpSocket::disconnected, cs,
+            [=](void)->void{
+            //th->wait();
+            th->terminate();
+            delete th;
+            }
+        );
+    connect(this, &MainWindow::destroyed, th, [=](void)->void{
+        th->terminate();
+        delete th;
+        this->close();
+        });//关闭服务器先处理子线程
 
     qRegisterMetaType<user_t>("user_t");    //完成结构体注册
     connect(cs, SIGNAL(sigMes(QString)), this, SLOT(onSigMes(QString)));

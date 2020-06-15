@@ -59,7 +59,7 @@ user_t UserDaoImp::findUser(const QString &name)
         QString username = query.value(0).toString();
         QString userpasswd = query.value(1).toString();
         int flag = query.value(2).toInt();
-        int money = query.value(3).toInt();
+        double money = query.value(3).toDouble();
         QString vip = query.value(4).toString();
         QString portrait = query.value(5).toString();
         if (name == username) {
@@ -112,7 +112,7 @@ void UserDaoImp::topUpUser(user_t user)
     QSqlQuery query(helper->getDb());
 
     QString name = QString::fromLocal8Bit(user.username);
-    int money = QString(user.data).toInt();
+    double money = QString(user.data).toDouble();
     QString sql = QString("update %1 set money=%2 where name='%3';").arg(tbName).arg(money).arg(name);
     qDebug() << sql;
     if (!query.exec(sql)) {//????
