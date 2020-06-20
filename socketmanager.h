@@ -6,7 +6,9 @@
 #include <QVector>
 #include "user.h"
 
-//单例模式
+/**
+ * @brief The SocketManager class
+ */
 class SocketManager
 {
 public:
@@ -14,7 +16,6 @@ public:
     void insertSocket(ClientSocket *cs);         //插入套接字(用户上线)
     void eraseSocket(ClientSocket *cs);          //用户下线，清理套接字
     QVector<ClientSocket*> getAllSocket()const;  //获取所有在线用户的套接字
-    //void updateUser(user_t);                     //更新内存中用户信息
 
 private:
     SocketManager();

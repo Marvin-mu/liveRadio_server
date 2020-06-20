@@ -8,6 +8,9 @@
 #include <QDebug>
 #include <QVector>
 
+/**
+ * @brief The ClientSocket class
+ */
 class ClientSocket : public QObject
 {
     Q_OBJECT
@@ -15,18 +18,18 @@ public:
     explicit ClientSocket(QTcpSocket *socket, QObject *parent = 0);
     ~ClientSocket();
 
-    void serverReg(user_t user);       //注册
-    void serverLogin(user_t user);     //登录
-    void serverExit(user_t user);      //退出
-    void serverRoomName(user_t user);  //客户端请求开房
-    void serverRoomList(user_t user);  //客户端请求房间列表
+    void serverReg(user_t user);        //注册
+    void serverLogin(user_t user);      //登录
+    void serverExit(user_t user);       //退出
+    void serverRoomName(user_t user);   //客户端请求开房
+    void serverRoomList(user_t user);   //客户端请求房间列表
     void serverJoinRoom(user_t);        //房间新听众
-    void serverQuitRoom(user_t);
+    void serverQuitRoom(user_t);        //用户离开直播间
     void serverQuit(user_t user);       //关闭直播间请求
-    void serverChatText(user_t user);  //客户端请求文字聊天
+    void serverChatText(user_t user);   //客户端请求文字聊天
     void serverBs(user_t user);         //处理弹幕
-    void serverIp(user_t);//
-    void serverTopUp(user_t);
+    void serverIp(user_t);              //分配ip
+    void serverTopUp(user_t);           //充值
 
     QTcpSocket* getSocket()const;
     user_t getUser()const;

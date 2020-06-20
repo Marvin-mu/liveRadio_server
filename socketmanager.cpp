@@ -3,11 +3,18 @@
 SocketManager* SocketManager::instance = NULL;
 QMutex SocketManager::mutex;
 
+/**
+ * @brief SocketManager::SocketManager
+ */
 SocketManager::SocketManager()
 {
 
 }
 
+/**
+ * @brief SocketManager::getInstance
+ * @return
+ */
 SocketManager* SocketManager::getInstance()
 {
     if (instance == 0) {
@@ -20,11 +27,19 @@ SocketManager* SocketManager::getInstance()
     return instance;
 }
 
+/**
+ * @brief SocketManager::insertSocket
+ * @param cs
+ */
 void SocketManager::insertSocket(ClientSocket *cs)
 {
     sockets.push_back(cs);
 }
 
+/**
+ * @brief SocketManager::eraseSocket
+ * @param cs
+ */
 void SocketManager::eraseSocket(ClientSocket *cs)
 {
     for (auto &it : sockets) {
@@ -35,19 +50,14 @@ void SocketManager::eraseSocket(ClientSocket *cs)
     }
 }
 
+/**
+ *@brief
+ *@param
+ *@return
+ *@author marvin
+ *@data 2020-06-19
+ **/
 QVector<ClientSocket*> SocketManager::getAllSocket()const
 {
     return sockets;
 }
-/*
-void SocketManager::updateUser(user_t user)
-{
-    QString name = QString::fromLocal8Bit(user.username);
-    for (auto &it : sockets) {
-        if (it->getUser().username == name) {
-            it->setUser(user);
-            break;
-        }
-    }
-}
-*/

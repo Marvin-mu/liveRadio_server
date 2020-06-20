@@ -8,7 +8,7 @@ enum Flag{
 };
 
 enum type{
-    REG=1,            //注册
+    REG=1,          //注册
     LOGIN,          //登录
     EXIT,           //用户下线
     ROOMLIST,       //在线直播间
@@ -28,7 +28,7 @@ typedef struct
     int flag;               //状态标志位
     char username[20];      //用户名
     char password[20];      //密码
-    char portrait[30000];   //头像
+    char portrait[100];     //头像路径
     double money;           //余额
     char vip[10];           //vip
     char roomName[20];      //聊天室名称

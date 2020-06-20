@@ -6,11 +6,25 @@
 DBHelper* DBHelper::instance = NULL;
 QMutex DBHelper::mutex;
 
+/**
+ *@brief
+ *@param
+ *@return
+ *@author marvin
+ *@data 2020-06-19
+ **/
 QSqlDatabase DBHelper::getDb()const
 {
     return db;
 }
 
+/**
+ *@brief
+ *@param
+ *@return
+ *@author marvin
+ *@data 2020-06-19
+ **/
 DBHelper* DBHelper::getInstance()
 {
     if (instance == NULL){
@@ -23,7 +37,13 @@ DBHelper* DBHelper::getInstance()
     return instance;
 }
 
-//建立数据库链接
+/**
+ *@brief create connect
+ *@param dbName
+ *@return
+ *@author marvin
+ *@data 2020-06-19
+ **/
 void DBHelper::createConn(const QString dbName)
 {
     db.setHostName("localhost");
@@ -36,7 +56,13 @@ void DBHelper::createConn(const QString dbName)
     }
 }
 
-//摧毁数据库链接
+/**
+ *@brief destroy
+ *@param
+ *@return
+ *@author marvin
+ *@data 2020-06-19
+ **/
 void DBHelper::destroyConn()
 {
     if (db.isValid()) {
@@ -51,6 +77,13 @@ void DBHelper::destroyConn()
     }
 }
 
+/**
+ *@brief destructor
+ *@param
+ *@return
+ *@author marvin
+ *@data 2020-06-19
+ **/
 DBHelper::~DBHelper()
 {
     if (NULL != instance) {
@@ -59,7 +92,13 @@ DBHelper::~DBHelper()
     instance = NULL;
 }
 
-//构造函数,mysql数据库
+/**
+ *@brief structre
+ *@param
+ *@return
+ *@author marvin
+ *@data 2020-06-19
+ **/
 DBHelper::DBHelper()
 {
     if (QSqlDatabase::contains("qt_sql_default_connection")) {

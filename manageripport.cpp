@@ -13,11 +13,18 @@
 ManagerIpPort* ManagerIpPort::instance = nullptr;
 QMutex ManagerIpPort::mutex;
 
+/**
+ * @brief ManagerIpPort::ManagerIpPort
+ */
 ManagerIpPort::ManagerIpPort()
 {
 
 }
 
+/**
+ * @brief ManagerIpPort::getInsatnce
+ * @return
+ */
 ManagerIpPort* ManagerIpPort::getInsatnce()
 {
     if (NULL == instance) {
@@ -30,6 +37,10 @@ ManagerIpPort* ManagerIpPort::getInsatnce()
     return instance;
 }
 
+/**
+ * @brief ManagerIpPort::create
+ * @param name
+ */
 void ManagerIpPort::create(QString name)
 {
     DBHelper *helper = DBHelper::getInstance();
@@ -49,6 +60,11 @@ void ManagerIpPort::create(QString name)
     helper->destroyConn();
 }
 
+/**
+ * @brief ManagerIpPort::get
+ * @param name
+ * @return
+ */
 QString ManagerIpPort::get(QString name)
 {
     DBHelper *helper = DBHelper::getInstance();
@@ -70,6 +86,10 @@ QString ManagerIpPort::get(QString name)
     return  str;
 }
 
+/**
+ * @brief ManagerIpPort::remove
+ * @param name
+ */
 void ManagerIpPort::remove(QString name)
 {
     DBHelper *helper = DBHelper::getInstance();

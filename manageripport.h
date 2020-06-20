@@ -5,6 +5,9 @@
 #include <QMutex>
 #include "DBHelper.h"
 
+/**
+ * @brief The ManagerIpPort class
+ */
 class ManagerIpPort
 {
 public:

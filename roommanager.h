@@ -6,6 +6,9 @@
 #include<QVector>
 using namespace std;
 
+/**
+ * @brief The RoomManager class
+ */
 class RoomManager
 {
 public:

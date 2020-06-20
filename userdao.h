@@ -16,6 +16,9 @@ enum{
     UPDATE_DATABASE
 };
 
+/**
+ * @brief The UserDao class
+ */
 class UserDao
 {
 public:
